@@ -1,0 +1,28 @@
+{
+  "name": "ai-component-builder",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch run dev-server.ts",
+    "build": "bun run build.ts"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.6.0",
+    "@tailwindcss/postcss": "^0.0.0-development.1",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "esbuild-wasm": "^0.19.12",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-syntax-highlighter": "^15.6.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.0.0",
+    "bun-types": "latest",
+    "tailwindcss": "^3.3.0",
+    "postcss": "^8.4.31",
+    "autoprefixer": "^10.4.16",
+    "@tailwindcss/forms": "^0.5.7"
+  }
+}
