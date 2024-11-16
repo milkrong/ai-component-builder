@@ -1,27 +1,26 @@
-import { CodeBlock } from '../types/chat';
+import { CodeBlock } from '../types';
 
 export interface ParsedComponent {
   description: string;
   code: string;
+  schema?: string;
 }
 
 export const parseComponentResponse = (
   content: string
 ): ParsedComponent | null => {
   try {
-    // 使用简单的正则表达式解析XML
-    const descriptionMatch = content.match(
-      /<description>(.*?)<\/description>/s
-    );
     const codeMatch = content.match(/<code>(.*?)<\/code>/s);
+    const schemaMatch = content.match(/<schema>(.*?)<\/schema>/s);
 
-    if (!descriptionMatch || !codeMatch) {
+    if (!codeMatch) {
       return null;
     }
 
     return {
-      description: descriptionMatch[1].trim(),
+      description: '',
       code: codeMatch[1].trim(),
+      schema: schemaMatch ? schemaMatch[1].trim() : undefined,
     };
   } catch (error) {
     console.error('Error parsing XML:', error);
@@ -40,4 +39,11 @@ export const extractCodeBlocks = (
       code: parsedComponent.code,
     },
   ];
+};
+
+export const cleanCodeBlock = (content: string): string => {
+  return content
+    .replace(/^```[a-z]*\n/, '')
+    .replace(/\n```$/, '')
+    .trim();
 };

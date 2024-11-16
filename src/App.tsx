@@ -5,7 +5,8 @@ import Chat from './components/Chat';
 
 const App: React.FC = () => {
   const [error, setError] = useState<string | undefined>();
-  const [props, setProps] = useState<Record<string, any>>({});
+  const [schema, setSchema] = useState<string | undefined>();
+  const [code, setCode] = useState<string | undefined>();
   const rendererRef = useRef<ComponentRenderer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -22,16 +23,31 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const handlePreviewCode = async (code: string) => {
+  const handlePreviewCode = async (code: string, schema?: string) => {
     if (!rendererRef.current) return;
-
+    if (schema) {
+      setSchema(schema);
+    }
     try {
-      const result = await rendererRef.current.render(code, props);
+      const result = await rendererRef.current.render(code, {});
+      setCode(code);
       if (!result.success) {
         setError(result.error);
       } else {
         setError(undefined);
       }
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'Failed to render component'
+      );
+    }
+  };
+
+  const handleApplyProps = (props: Record<string, any>) => {
+    if (!rendererRef.current) return;
+    if (!code) return;
+    try {
+      rendererRef.current.render(code, props);
     } catch (error) {
       setError(
         error instanceof Error ? error.message : 'Failed to render component'
@@ -47,6 +63,9 @@ const App: React.FC = () => {
           <h1 className="text-xl font-semibold text-gray-900">
             AI Component Builder
           </h1>
+          <p className="text-sm text-gray-500">
+            2024 Build React components with AI, No DSL, No Code
+          </p>
         </div>
       </header>
 
@@ -93,7 +112,7 @@ const App: React.FC = () => {
 
           {/* Props Editor */}
           <div className="w-1/3 bg-white rounded-lg shadow overflow-auto">
-            <PropEditor onPropsChange={setProps} />
+            <PropEditor onPropsChange={handleApplyProps} schema={schema} />
           </div>
         </div>
       </div>

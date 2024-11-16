@@ -2,17 +2,33 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Message, CodeBlock } from '../types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { claudeService } from '@/service/claude';
-import { extractCodeBlocks, parseComponentResponse } from '@/utils/xmlParser';
+import {
+  extractCodeBlocks,
+  parseComponentResponse,
+  ParsedComponent,
+} from '@/utils/xmlParser';
 
 interface ChatProps {
-  onPreviewCode: (code: string) => void;
+  onPreviewCode: (code: string, schema?: string) => void;
+}
+
+interface ApiResponse {
+  content: string;
+  conversation_id?: string;
+  codeBlocks?: ParsedComponent[];
+  usage?: {
+    token_count: number;
+    output_count: number;
+    input_count: number;
+  };
+  error?: string;
 }
 
 const Chat: React.FC<ChatProps> = ({ onPreviewCode }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | undefined>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -37,33 +53,44 @@ const Chat: React.FC<ChatProps> = ({ onPreviewCode }) => {
     setLoading(true);
 
     try {
-      const response = await claudeService.generateComponent(input);
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          input,
+          ...(conversationId ? { conversation_id: conversationId } : {}),
+        }),
+      });
 
-      if (response.error) {
-        throw new Error(response.error);
+      const data: ApiResponse = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Failed to generate component');
       }
 
-      const parsedComponent = parseComponentResponse(response.content);
-      if (!parsedComponent) {
-        throw new Error('Failed to parse component response');
-      }
+      console.log('data>>>>>>>', data);
 
-      const codeBlocks = extractCodeBlocks(parsedComponent);
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: parsedComponent.description,
-        codeBlocks,
+        content: data.content,
+        codeBlocks: data.codeBlocks,
         timestamp: Date.now(),
+        usage: data.usage,
       };
 
       setMessages((msgs) => [...msgs, assistantMessage]);
+      setConversationId(data.conversation_id);
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: `错误: ${
-          error instanceof Error ? error.message : '生成组件失败'
+        content: `Error: ${
+          error instanceof Error
+            ? error.message
+            : 'Failed to generate component'
         }`,
         timestamp: Date.now(),
       };
@@ -73,18 +100,24 @@ const Chat: React.FC<ChatProps> = ({ onPreviewCode }) => {
     }
   };
 
-  const handleCodeClick = (code: string) => {
-    onPreviewCode(code);
+  const handleCodeClick = (code: string, schema?: string) => {
+    onPreviewCode(code, schema);
   };
 
   const renderMessage = (message: Message) => {
+    console.log('message>>>>>>>', message);
     return (
       <div
         key={message.id}
-        className={`flex ${
+        className={`flex items-start ${
           message.type === 'user' ? 'justify-end' : 'justify-start'
         } mb-4`}
       >
+        {message.type === 'assistant' && (
+          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium mr-2">
+            A
+          </div>
+        )}
         <div
           className={`max-w-3/4 p-4 rounded-lg ${
             message.type === 'user'
@@ -93,25 +126,38 @@ const Chat: React.FC<ChatProps> = ({ onPreviewCode }) => {
           }`}
         >
           <p className="whitespace-pre-wrap">{message.content}</p>
-          {message.codeBlocks?.map((block: CodeBlock, index: number) => (
+          {message.codeBlocks?.map((block: ParsedComponent, index: number) => (
             <div key={index} className="mt-2">
-              <div className="relative">
-                <SyntaxHighlighter
-                  language={block.language}
-                  style={vscDarkPlus}
-                  customStyle={{
-                    margin: 0,
-                    cursor: 'pointer',
-                    padding: '1rem',
-                  }}
-                  onClick={() => handleCodeClick(block.code)}
-                >
-                  {block.code}
-                </SyntaxHighlighter>
+              <div className="relative overflow-hidden">
+                <div className="overflow-x-auto">
+                  <SyntaxHighlighter
+                    language="tsx"
+                    style={vscDarkPlus}
+                    customStyle={{
+                      margin: 0,
+                      cursor: 'pointer',
+                      padding: '1rem',
+                    }}
+                    onClick={() => handleCodeClick(block.code, block.schema)}
+                  >
+                    {block.code}
+                  </SyntaxHighlighter>
+                  <SyntaxHighlighter
+                    language="json"
+                    style={vscDarkPlus}
+                    customStyle={{
+                      margin: 0,
+                      cursor: 'pointer',
+                      padding: '1rem',
+                    }}
+                  >
+                    {block.schema || ''}
+                  </SyntaxHighlighter>
+                </div>
                 <div className="absolute top-2 right-2 flex space-x-2">
                   <button
                     className="p-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                    onClick={() => handleCodeClick(block.code)}
+                    onClick={() => handleCodeClick(block.code, block.schema)}
                   >
                     预览
                   </button>
@@ -126,6 +172,11 @@ const Chat: React.FC<ChatProps> = ({ onPreviewCode }) => {
             </div>
           ))}
         </div>
+        {message.type === 'user' && (
+          <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white font-medium ml-2">
+            U
+          </div>
+        )}
       </div>
     );
   };
