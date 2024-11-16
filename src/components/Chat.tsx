@@ -6,7 +6,7 @@ import {
   extractCodeBlocks,
   parseComponentResponse,
   ParsedComponent,
-} from '@/utils/xmlParser';
+} from '@/lib/utils/xmlParser';
 
 interface ChatProps {
   onPreviewCode: (code: string, schema?: string) => void;
@@ -114,12 +114,12 @@ const Chat: React.FC<ChatProps> = ({ onPreviewCode }) => {
         } mb-4`}
       >
         {message.type === 'assistant' && (
-          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium mr-2">
+          <div className="w-8 h-8 flex-1 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium mr-2">
             A
           </div>
         )}
         <div
-          className={`max-w-3/4 p-4 rounded-lg ${
+          className={`max-w-3/4 p-4 rounded-lg min-w-0 ${
             message.type === 'user'
               ? 'bg-blue-500 text-white'
               : 'bg-gray-100 text-gray-800'

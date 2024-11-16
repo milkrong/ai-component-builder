@@ -1,12 +1,14 @@
-// ... existing imports ...
-import { cleanCodeBlock, extractCodeBlocks } from '@/lib/utils/xmlParser';
-import { parseComponentResponse } from '@/lib/utils/xmlParser';
-import { cozeService } from '../service/coze';
+// src/api/chat.ts
+import { claudeService } from '../service/coze';
+import {
+  parseComponentResponse,
+  extractCodeBlocks,
+} from '../../lib/utils/xmlParser';
 
 export const apiGenerateHandler = {
   async POST(req: Request) {
     try {
-      const { input, conversation_id } = await req.json();
+      const { input } = await req.json();
 
       if (!input || typeof input !== 'string') {
         return new Response(JSON.stringify({ error: 'Invalid input' }), {
@@ -17,10 +19,7 @@ export const apiGenerateHandler = {
         });
       }
 
-      const response = await cozeService.generateComponent(
-        input,
-        conversation_id
-      );
+      const response = await claudeService.generateComponent(input);
 
       if (!response) {
         throw new Error('Failed to generate component');
@@ -35,15 +34,12 @@ export const apiGenerateHandler = {
         throw new Error('Failed to parse component response');
       }
 
-      // const codeBlocks = extractCodeBlocks(parsedComponent);
-      const codeBlocks = [parsedComponent];
+      const codeBlocks = extractCodeBlocks(parsedComponent);
 
       return new Response(
         JSON.stringify({
           content: parsedComponent.description,
           codeBlocks,
-          usage: response.usage, // 添加 usage 信息到响应中
-          conversation_id: response.conversation_id,
         }),
         {
           status: 200,
@@ -53,7 +49,6 @@ export const apiGenerateHandler = {
         }
       );
     } catch (error) {
-      console.error('Generate component error:', error); // 添加错误日志
       return new Response(
         JSON.stringify({
           error:

@@ -1,5 +1,5 @@
 import { CozeUsage } from './service/coze';
-import { ParsedComponent } from './utils/xmlParser';
+import { ParsedComponent } from '@/lib/utils/xmlParser';
 
 export interface Package {
   package: string; // 包名
