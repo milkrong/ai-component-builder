@@ -73,8 +73,7 @@ export class CozeService {
   private static instance: CozeService;
   private readonly baseUrl = 'https://api.coze.cn/v3/chat';
   private readonly botId = '7437495438552350760';
-  private readonly token =
-    'pat_VHdDiXUTTkkmWGUuLt5QLrVp02zUyP9GgsdBwGIN97khqk42eHE64lMgLqJBWvoJ';
+  private readonly token = '';
 
   private constructor() {}
 
