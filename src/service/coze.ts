@@ -72,8 +72,8 @@ interface ChatMessageResponse {
 export class CozeService {
   private static instance: CozeService;
   private readonly baseUrl = 'https://api.coze.cn/v3/chat';
-  private readonly botId = '7437495438552350760';
-  private readonly token = '';
+  private readonly botId = process.env.REACT_APP_COZE_BOT_ID;
+  private readonly token = process.env.REACT_APP_COZE_API_KEY;
 
   private constructor() {}
 
