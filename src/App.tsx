@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ComponentRenderer } from './renderer/component-renderer';
 import PropEditor from './components/PropEditor';
 import Chat from './components/Chat';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import SavedComponentsList from './components/SavedComponentsList';
 
 const App: React.FC = () => {
   const [error, setError] = useState<string | undefined>();
@@ -72,9 +74,22 @@ const App: React.FC = () => {
       {/* Main Content */}
       <div className="max-w-full mx-auto px-4 py-4">
         <div className="flex gap-4 h-[calc(100vh-8rem)]">
-          {/* Chat */}
-          <div className="w-1/3">
-            <Chat onPreviewCode={handlePreviewCode} />
+          {/* Chat and Saved Components */}
+          <div className="w-1/3 bg-white rounded-lg shadow">
+            <Tabs defaultValue="chat" className="h-full flex flex-col">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="chat">Chat</TabsTrigger>
+                <TabsTrigger value="saved">Saved Components</TabsTrigger>
+              </TabsList>
+              <div className="flex-1 overflow-hidden">
+                <TabsContent value="chat" className="h-full m-0 p-0">
+                  <Chat onPreviewCode={handlePreviewCode} />
+                </TabsContent>
+                <TabsContent value="saved" className="h-full m-0 p-0">
+                  <SavedComponentsList onPreviewCode={handlePreviewCode} />
+                </TabsContent>
+              </div>
+            </Tabs>
           </div>
 
           {/* Preview */}

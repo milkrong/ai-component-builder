@@ -24,6 +24,17 @@ interface ApiResponse {
   error?: string;
 }
 
+interface SaveResponse {
+  success: boolean;
+  component?: {
+    id: number;
+    name: string;
+    code: string;
+    schema: string;
+  };
+  error?: string;
+}
+
 const Chat: React.FC<ChatProps> = ({ onPreviewCode }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -104,6 +115,38 @@ const Chat: React.FC<ChatProps> = ({ onPreviewCode }) => {
     onPreviewCode(code, schema);
   };
 
+  const handleSaveComponent = async (code: string, schema: string) => {
+    try {
+      const response = await fetch('/api/save-component', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name:
+            'Component_' +
+            new Date().toISOString().slice(0, 19).replace(/[-:]/g, ''),
+          code,
+          schema,
+        }),
+      });
+
+      const data: SaveResponse = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to save component');
+      }
+
+      alert('Component saved successfully!');
+    } catch (error) {
+      alert(
+        `Error saving component: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
+    }
+  };
+
   const renderMessage = (message: Message) => {
     console.log('message>>>>>>>', message);
     return (
@@ -166,6 +209,14 @@ const Chat: React.FC<ChatProps> = ({ onPreviewCode }) => {
                     onClick={() => navigator.clipboard.writeText(block.code)}
                   >
                     复制
+                  </button>
+                  <button
+                    className="p-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+                    onClick={() =>
+                      handleSaveComponent(block.code, block.schema || '')
+                    }
+                  >
+                    保存
                   </button>
                 </div>
               </div>

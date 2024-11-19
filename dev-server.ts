@@ -1,8 +1,17 @@
 import express from 'express';
 import { apiGenerateHandler } from './src/handlers/chat';
 import { htmlHandler, cssHandler, tsOrTsxHandler } from './src/handlers/file';
+import { PrismaClient } from '@prisma/client';
+import * as dotenv from 'dotenv';
+import path from 'path';
+
+// Load .env.local file
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+
 const app = express();
 const PORT = 3000;
+
+const prisma = new PrismaClient();
 
 // Express middleware
 app.use(express.json());
@@ -89,8 +98,58 @@ app.get(['*.ts', '*.tsx'], async (req, res) => {
   }
 });
 
+// Updated save component route
+app.post('/api/save-component', async (req, res) => {
+  try {
+    const { code, schema, name } = req.body;
+    if (!code || !schema || !name) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const savedComponent = await prisma.savedComponent.create({
+      data: {
+        name,
+        code,
+        schema: JSON.stringify(schema), // Convert schema object to string for storage
+      },
+    });
+
+    res.status(200).json({ success: true, component: savedComponent });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Internal server error',
+    });
+  }
+});
+
+// Updated get saved components route
+app.get('/api/saved-components', async (req, res) => {
+  try {
+    const components = await prisma.savedComponent.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Parse schema back to object before sending to client
+    const formattedComponents = components.map((component) => ({
+      ...component,
+      schema: JSON.parse(component.schema),
+    }));
+
+    res.status(200).json(formattedComponents);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Internal server error',
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Development server running at http://localhost:${PORT}`);
 });
 
-// Remove the standalone apiGenerateHandler function at the bottom since it's now handled by the Express route
+// Add cleanup when server shuts down
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
+});

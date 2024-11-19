@@ -1,5 +1,3 @@
-// ... existing imports ...
-import { cleanCodeBlock, extractCodeBlocks } from '@/lib/utils/xmlParser';
 import { parseComponentResponse } from '@/lib/utils/xmlParser';
 import { cozeService } from '../service/coze';
 
