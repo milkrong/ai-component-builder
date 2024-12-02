@@ -3,6 +3,7 @@ import * as esbuild from 'esbuild-wasm';
 class EsbuildService {
   private static instance: EsbuildService;
   private initialized: boolean = false;
+  private packageCache: Map<string, string> = new Map();
 
   private constructor() {}
 
@@ -11,6 +12,21 @@ class EsbuildService {
       EsbuildService.instance = new EsbuildService();
     }
     return EsbuildService.instance;
+  }
+
+  private async fetchPackage(url: string): Promise<string> {
+    const cached = this.packageCache.get(url);
+    if (cached) return cached;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch package from ${url}: ${response.statusText}`
+      );
+    }
+    const content = await response.text();
+    this.packageCache.set(url, content);
+    return content;
   }
 
   async initialize() {
@@ -35,7 +51,6 @@ class EsbuildService {
 
     try {
       const virtualFs = new Map();
-      // 包装用户代码，使其成为一个返回组件的IIF
       const wrappedCode = `
       ${code}
       if (typeof Component !== 'function') {
@@ -69,6 +84,27 @@ class EsbuildService {
                 namespace: 'external-react',
               }));
 
+              // 处理第三方包导入
+              build.onResolve({ filter: /^[^./]/ }, (args) => {
+                if (args.path.startsWith('react')) {
+                  return;
+                }
+                return {
+                  path: `https://unpkg.com/${args.path}`,
+                  namespace: 'unpkg-package',
+                };
+              });
+
+              // 处理第三方包内的相对路径导入
+              build.onResolve({ filter: /^\.+\// }, (args) => {
+                if (args.namespace === 'unpkg-package') {
+                  return {
+                    path: new URL(args.path, args.importer).toString(),
+                    namespace: 'unpkg-package',
+                  };
+                }
+              });
+
               // 加载虚拟文件
               build.onLoad(
                 { filter: /.*/, namespace: 'virtual-fs' },
@@ -96,6 +132,20 @@ class EsbuildService {
                       loader: 'js',
                     };
                   }
+                }
+              );
+
+              // 加载第三方包
+              build.onLoad(
+                { filter: /.*/, namespace: 'unpkg-package' },
+                async (args) => {
+                  const contents = await EsbuildService.instance.fetchPackage(
+                    args.path
+                  );
+                  return {
+                    contents,
+                    loader: args.path.endsWith('.css') ? 'css' : 'js',
+                  };
                 }
               );
             },

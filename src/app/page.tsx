@@ -1,11 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ComponentRenderer } from './renderer/component-renderer';
-import PropEditor from './components/PropEditor';
-import Chat from './components/Chat';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import SavedComponentsList from './components/SavedComponentsList';
+'use client';
 
-const App: React.FC = () => {
+import React, { useState, useRef, useEffect } from 'react';
+import { ComponentRenderer } from '../renderer/component-renderer';
+import PropEditor from '../components/PropEditor';
+import Chat from '../components/Chat';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import SavedComponentsList from '../components/SavedComponentsList';
+
+export default function Home() {
   const [error, setError] = useState<string | undefined>();
   const [schema, setSchema] = useState<string | undefined>();
   const [code, setCode] = useState<string | undefined>();
@@ -133,6 +135,4 @@ const App: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default App;
+}
